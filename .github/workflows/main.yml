@@ -1,10 +1,21 @@
-name: Final-Linux-Success
+name: Linux-SSH-Cloudflare
 on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Tmate Session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: false
+      - name: Install Cloudflare & SSH
+        run: |
+          sudo apt update
+          sudo apt install -y openssh-server curl
+          # تعيين كلمة مرور للسيرفر
+          echo "runner:P@ssword123" | sudo chpasswd
+          sudo systemctl start ssh
+
+          # تحميل وتثبيت أداة Cloudflare
+          curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared.deb
+
+          # تشغيل النفق (Tunnel) لخدمة الـ SSH
+          # سيعطيك رابطاً في السجلات ينتهي بـ .trycloudflare.com
+          cloudflared tunnel --url ssh://localhost:22
