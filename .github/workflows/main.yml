@@ -1,39 +1,26 @@
-name: Linux-RDP-Fixed
-
-on: 
-  workflow_dispatch:
-
+name: Linux-True-Power
+on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Preparing GUI and RDP
+      - name: Essential Tools Only
         run: |
           sudo apt update
-          # تثبيت الواجهة مع إصلاح ملفات الإعدادات لمنع خطأ failsafe
-          sudo apt install -y xfce4 xfce4-goodies xfce4-terminal xorg dbus-x11 x11-xserver-utils xrdp
-          sudo apt install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
-          
-          # إعداد مستخدم RDP وتحديد واجهة XFCE كواجهة افتراضية
-          sudo useradd -m RDP
-          sudo usermod -aG sudo RDP
-          echo 'RDP:P@ssword123' | sudo chpasswd
-          echo "startxfce4" > ~/.xsession
-          sudo -u RDP bash -c "echo 'startxfce4' > ~/.xsession"
-          
-          # تشغيل خدمة XRDP
-          sudo systemctl enable xrdp
-          sudo systemctl start xrdp
-          
-      - name: Installing Tailscale
+          sudo apt install -y screen curl wget tmate
+          # تعيين كلمة مرور قوية للمستخدم الحالي
+          echo "runneradmin:P@ssword123" | sudo chpasswd
+          echo "root:P@ssword123" | sudo chpasswd
+
+      - name: Install Tailscale
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
           sudo tailscaled &
-          # استبدل الكود التالي بمفتاح التوثيق الخاص بك أو استخدم الأمر العادي
-          # sudo tailscale up --authkey=YOUR_AUTH_KEY 
-          
+          sleep 5
+          # سيظهر الرابط في السجلات (Logs)
+          sudo tailscale up
+
       - name: Keep Alive
         run: |
-          echo "الآن قم بتشغيل 'sudo tailscale up' في الـ Terminal الخاص بالـ Runner"
-          echo "أو أضف مفتاح AuthKey ليعمل تلقائياً"
+          echo "السيرفر جاهز الآن."
           sleep 6h
