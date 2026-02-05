@@ -1,0 +1,48 @@
+name: Linux-RDP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update and Install Desktop Environment
+        run: |
+          sudo apt-get update
+          # تثبيت واجهة XFCE وخادم RDP
+          sudo apt-get install -y xfce4 xfce4-goodies xrdp
+          # ضبط الخادم ليستخدم واجهة XFCE عند تسجيل الدخول
+          echo "xfce4-session" > ~/.xsession
+          sudo systemctl enable xrdp
+          sudo systemctl start xrdp
+
+      - name: Create User and Password
+        run: |
+          # إنشاء مستخدم باسم RDP وتعيين كلمة سر: P@ssword123
+          sudo useradd -m RDP
+          sudo adduser RDP sudo
+          echo 'RDP:P@ssword123' | sudo chpasswd
+          # تغيير الصدفة الافتراضية إلى bash
+          sudo usermod -s /bin/bash RDP
+
+      - name: Install Tailscale
+        run: |
+          curl -fsSL https://tailscale.com/install.sh | sh
+
+      - name: Connect to Tailscale
+        run: |
+          # نستخدم مفتاح المصادقة الخاص بك من إعدادات Tailscale
+          sudo tailscale up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-linux-runner
+
+      - name: Keep Alive and Show Info
+        run: |
+          TS_IP=$(tailscale ip -4)
+          echo "========================================"
+          echo "Linux RDP is Ready!"
+          echo "IP Address: $TS_IP"
+          echo "Username: RDP"
+          echo "Password: P@ssword123"
+          echo "========================================"
+          # منع الـ Runner من التوقف
+          sleep 6h
