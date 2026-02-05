@@ -1,48 +1,39 @@
-name: Linux-RDP
+name: Linux-RDP-Fixed
 
-on:
+on: 
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Update and Install Desktop Environment
+      - name: Preparing GUI and RDP
         run: |
-          sudo apt-get update
-          # تثبيت واجهة XFCE وخادم RDP
-          sudo apt-get install -y xfce4 xfce4-goodies xrdp
-          # ضبط الخادم ليستخدم واجهة XFCE عند تسجيل الدخول
-          echo "xfce4-session" > ~/.xsession
+          sudo apt update
+          # تثبيت الواجهة مع إصلاح ملفات الإعدادات لمنع خطأ failsafe
+          sudo apt install -y xfce4 xfce4-goodies xfce4-terminal xorg dbus-x11 x11-xserver-utils xrdp
+          sudo apt install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
+          
+          # إعداد مستخدم RDP وتحديد واجهة XFCE كواجهة افتراضية
+          sudo useradd -m RDP
+          sudo usermod -aG sudo RDP
+          echo 'RDP:P@ssword123' | sudo chpasswd
+          echo "startxfce4" > ~/.xsession
+          sudo -u RDP bash -c "echo 'startxfce4' > ~/.xsession"
+          
+          # تشغيل خدمة XRDP
           sudo systemctl enable xrdp
           sudo systemctl start xrdp
-
-      - name: Create User and Password
-        run: |
-          # إنشاء مستخدم باسم RDP وتعيين كلمة سر: P@ssword123
-          sudo useradd -m RDP
-          sudo adduser RDP sudo
-          echo 'RDP:P@ssword123' | sudo chpasswd
-          # تغيير الصدفة الافتراضية إلى bash
-          sudo usermod -s /bin/bash RDP
-
-      - name: Install Tailscale
+          
+      - name: Installing Tailscale
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
-
-      - name: Connect to Tailscale
+          sudo tailscaled &
+          # استبدل الكود التالي بمفتاح التوثيق الخاص بك أو استخدم الأمر العادي
+          # sudo tailscale up --authkey=YOUR_AUTH_KEY 
+          
+      - name: Keep Alive
         run: |
-          # نستخدم مفتاح المصادقة الخاص بك من إعدادات Tailscale
-          sudo tailscale up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-linux-runner
-
-      - name: Keep Alive and Show Info
-        run: |
-          TS_IP=$(tailscale ip -4)
-          echo "========================================"
-          echo "Linux RDP is Ready!"
-          echo "IP Address: $TS_IP"
-          echo "Username: RDP"
-          echo "Password: P@ssword123"
-          echo "========================================"
-          # منع الـ Runner من التوقف
+          echo "الآن قم بتشغيل 'sudo tailscale up' في الـ Terminal الخاص بالـ Runner"
+          echo "أو أضف مفتاح AuthKey ليعمل تلقائياً"
           sleep 6h
